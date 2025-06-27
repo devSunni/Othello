@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="스마트폰용 대화형 오셀로 게임">
+    <meta name="theme-color" content="#2c3e50">
+    <title>오셀로 게임</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icon-192x192.png">
+    <link rel="apple-touch-icon" href="icon-192x192.png">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 오셀로 게임</h1>
+            <div class="game-info">
+                <div class="score">
+                    <span class="player">흑: <span id="black-score">2</span></span>
+                    <span class="player">백: <span id="white-score">2</span></span>
+                </div>
+                <div class="current-player">
+                    현재 차례: <span id="current-player">흑</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="game-board">
+            <div id="board" class="board"></div>
+        </div>
+
+        <div class="controls">
+            <button id="new-game" class="btn">새 게임</button>
+            <button id="hint" class="btn">힌트</button>
+            <button id="undo" class="btn">되돌리기</button>
+        </div>
+
+        <div class="chat-container">
+            <div id="chat-messages" class="chat-messages"></div>
+            <div class="chat-input-container">
+                <input type="text" id="chat-input" placeholder="메시지를 입력하세요..." maxlength="100">
+                <button id="send-message" class="btn">전송</button>
+            </div>
+        </div>
+
+        <div id="game-over-modal" class="modal">
+            <div class="modal-content">
+                <h2>게임 종료!</h2>
+                <p id="winner-text"></p>
+                <button id="play-again" class="btn">다시 하기</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="sw.js"></script>
+</body>
+</html> 
