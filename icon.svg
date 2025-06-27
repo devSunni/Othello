@@ -1,0 +1,37 @@
+<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+  <!-- 배경 -->
+  <rect width="512" height="512" fill="#667eea"/>
+  
+  <!-- 오셀로 보드 -->
+  <rect x="102" y="102" width="308" height="308" fill="#27ae60"/>
+  
+  <!-- 격자 -->
+  <g stroke="#2c3e50" stroke-width="3" fill="none">
+    <line x1="102" y1="140" x2="410" y2="140"/>
+    <line x1="102" y1="178" x2="410" y2="178"/>
+    <line x1="102" y1="216" x2="410" y2="216"/>
+    <line x1="102" y1="254" x2="410" y2="254"/>
+    <line x1="102" y1="292" x2="410" y2="292"/>
+    <line x1="102" y1="330" x2="410" y2="330"/>
+    <line x1="102" y1="368" x2="410" y2="368"/>
+    <line x1="102" y1="406" x2="410" y2="406"/>
+    
+    <line x1="140" y1="102" x2="140" y2="410"/>
+    <line x1="178" y1="102" x2="178" y2="410"/>
+    <line x1="216" y1="102" x2="216" y2="410"/>
+    <line x1="254" y1="102" x2="254" y2="410"/>
+    <line x1="292" y1="102" x2="292" y2="410"/>
+    <line x1="330" y1="102" x2="330" y2="410"/>
+    <line x1="368" y1="102" x2="368" y2="410"/>
+    <line x1="406" y1="102" x2="406" y2="410"/>
+  </g>
+  
+  <!-- 중앙 돌들 -->
+  <circle cx="216" cy="216" r="25" fill="#2c3e50"/>
+  <circle cx="296" cy="296" r="25" fill="#2c3e50"/>
+  <circle cx="296" cy="216" r="25" fill="#ecf0f1"/>
+  <circle cx="216" cy="296" r="25" fill="#ecf0f1"/>
+  
+  <!-- 텍스트 -->
+  <text x="256" y="450" font-family="Arial" font-size="40" font-weight="bold" text-anchor="middle" fill="#ffffff">준우</text>
+</svg> 
