@@ -284,9 +284,12 @@ h1 {
 }
 
 .btn:disabled {
-    background: #bdc3c7;
+    background: #95a5a6;
+    color: #2c3e50;
     cursor: not-allowed;
     transform: none;
+    opacity: 0.8;
+    font-weight: 500;
 }
 
 .status-container {
@@ -493,60 +496,57 @@ h1 {
 /* 모바일 최적화 */
 @media (max-width: 480px) {
     .container {
-        padding: 5px;
-    }
-    
-    h1 {
-        font-size: 1.5rem;
-    }
-    
-    .user-info {
-        flex-direction: column;
-        gap: 5px;
-    }
-    
-    .game-mode-selector {
-        flex-direction: column;
-        gap: 5px;
-    }
-    
-    .mode-btn {
-        font-size: 0.8rem;
-        padding: 6px 12px;
-    }
-    
-    .difficulty-selector {
-        flex-direction: column;
-        gap: 5px;
-        padding: 8px;
-    }
-    
-    .difficulty-label {
-        font-size: 0.8rem;
-    }
-    
-    .difficulty-btn {
-        font-size: 0.7rem;
-        padding: 4px 8px;
-        min-width: 35px;
-    }
-    
-    .game-info {
-        flex-direction: column;
-        gap: 5px;
-    }
-    
-    .score {
+        padding: 10px;
         gap: 15px;
     }
     
+    h1 {
+        font-size: 1.3rem;
+    }
+    
+    .user-info {
+        margin-bottom: 10px;
+    }
+    
+    .game-mode-selector {
+        margin-bottom: 10px;
+    }
+    
+    .mode-btn {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .difficulty-selector {
+        margin-bottom: 10px;
+    }
+    
+    .difficulty-label {
+        font-size: 0.9rem;
+    }
+    
+    .difficulty-btn {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+    
+    .game-info {
+        margin-bottom: 10px;
+    }
+    
+    .score {
+        font-size: 0.9rem;
+    }
+    
     .board {
-        max-width: 300px;
-        padding: 8px;
+        max-width: 90vw;
+        max-height: 90vw;
+        width: 90vw;
+        height: 90vw;
     }
     
     .cell {
-        font-size: 1.2rem;
+        font-size: 0.8rem;
     }
     
     .controls {
@@ -555,20 +555,22 @@ h1 {
     
     .btn {
         padding: 10px 15px;
-        font-size: 0.8rem;
+        font-size: 0.9rem;
     }
     
     .modal-content {
-        margin: 20% auto;
+        width: 95%;
         padding: 20px;
     }
     
     .stats-summary {
         grid-template-columns: 1fr;
+        gap: 10px;
     }
     
     .login-buttons {
         flex-direction: column;
+        gap: 10px;
     }
     
     .login-buttons .btn {
@@ -635,5 +637,151 @@ h1 {
     .game-record {
         background: #2c3e50;
         color: white;
+    }
+}
+
+/* 가로 모드 최적화 */
+@media (orientation: landscape) and (max-height: 600px) {
+    .container {
+        flex-direction: row;
+        gap: 20px;
+        padding: 10px;
+        height: 100vh;
+    }
+    
+    header {
+        flex: 0 0 200px;
+        padding: 10px;
+    }
+    
+    h1 {
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+    }
+    
+    .game-mode-selector {
+        margin-bottom: 10px;
+    }
+    
+    .mode-btn {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .difficulty-selector {
+        margin-bottom: 10px;
+    }
+    
+    .difficulty-btn {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+    
+    .game-info {
+        margin-bottom: 10px;
+    }
+    
+    .score {
+        font-size: 0.9rem;
+    }
+    
+    .current-player {
+        font-size: 0.9rem;
+    }
+    
+    .game-board {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .board {
+        max-width: 60vh;
+        max-height: 60vh;
+        width: 60vh;
+        height: 60vh;
+    }
+    
+    .cell {
+        font-size: 0.8rem;
+    }
+    
+    .controls {
+        flex: 0 0 120px;
+        flex-direction: column;
+        gap: 8px;
+        justify-content: flex-start;
+        padding: 10px;
+    }
+    
+    .btn {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .status-container {
+        flex: 0 0 150px;
+        margin-top: 0;
+        padding: 10px;
+    }
+    
+    .status-messages {
+        max-height: 120px;
+        font-size: 0.8rem;
+    }
+    
+    .status-message {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+        margin-bottom: 4px;
+    }
+    
+    .user-info {
+        margin-bottom: 10px;
+    }
+    
+    .btn-small {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+}
+
+/* 태블릿 가로 모드 */
+@media (orientation: landscape) and (min-height: 601px) and (max-width: 1024px) {
+    .container {
+        flex-direction: row;
+        gap: 30px;
+        padding: 20px;
+        height: 100vh;
+    }
+    
+    header {
+        flex: 0 0 250px;
+    }
+    
+    .game-board {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .board {
+        max-width: 70vh;
+        max-height: 70vh;
+        width: 70vh;
+        height: 70vh;
+    }
+    
+    .controls {
+        flex: 0 0 150px;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .status-container {
+        flex: 0 0 200px;
+        margin-top: 0;
     }
 } 
