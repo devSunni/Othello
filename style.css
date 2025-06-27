@@ -68,6 +68,85 @@ h1 {
     transform: translateY(-1px);
 }
 
+.game-mode-selector {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.mode-btn {
+    background: #ecf0f1;
+    color: #2c3e50;
+    border: 2px solid #bdc3c7;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.mode-btn:hover {
+    background: #d5dbdb;
+    transform: translateY(-1px);
+}
+
+.mode-btn.active {
+    background: #3498db;
+    color: white;
+    border-color: #3498db;
+}
+
+.mode-btn.active:hover {
+    background: #2980b9;
+}
+
+.difficulty-selector {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(52, 152, 219, 0.1);
+    border-radius: 15px;
+}
+
+.difficulty-label {
+    font-weight: bold;
+    color: #2c3e50;
+    font-size: 0.9rem;
+}
+
+.difficulty-btn {
+    background: #ecf0f1;
+    color: #2c3e50;
+    border: 2px solid #bdc3c7;
+    padding: 6px 12px;
+    border-radius: 15px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    min-width: 40px;
+}
+
+.difficulty-btn:hover {
+    background: #d5dbdb;
+    transform: translateY(-1px);
+}
+
+.difficulty-btn.active {
+    background: #e74c3c;
+    color: white;
+    border-color: #e74c3c;
+}
+
+.difficulty-btn.active:hover {
+    background: #c0392b;
+}
+
 .game-info {
     display: flex;
     justify-content: space-between;
@@ -137,6 +216,16 @@ h1 {
     background: #e67e22;
 }
 
+.cell.ai-thinking {
+    background: #9b59b6;
+    animation: thinking 1s infinite;
+}
+
+@keyframes thinking {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
 @keyframes pulse {
     0% { transform: scale(1); }
     50% { transform: scale(1.1); }
@@ -200,83 +289,44 @@ h1 {
     transform: none;
 }
 
-.chat-container {
+.status-container {
     background: rgba(255, 255, 255, 0.95);
     border-radius: 15px;
     padding: 15px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 200px;
+    margin-top: 20px;
 }
 
-.chat-messages {
-    flex: 1;
+.status-messages {
+    max-height: 150px;
     overflow-y: auto;
-    margin-bottom: 15px;
-    max-height: 300px;
     padding: 10px;
     background: #f8f9fa;
     border-radius: 10px;
+    font-size: 0.9rem;
+    line-height: 1.4;
 }
 
-.message {
-    margin-bottom: 10px;
-    padding: 8px 12px;
-    border-radius: 15px;
-    max-width: 80%;
-    word-wrap: break-word;
+.status-message {
+    margin-bottom: 8px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    font-size: 0.85rem;
 }
 
-.message.user {
-    background: #3498db;
-    color: white;
-    margin-left: auto;
-    border-bottom-right-radius: 5px;
-}
-
-.message.system {
+.status-message.system {
     background: #e74c3c;
     color: white;
-    margin-right: auto;
-    border-bottom-left-radius: 5px;
 }
 
-.message.ai {
+.status-message.ai {
     background: #2ecc71;
     color: white;
-    margin-right: auto;
-    border-bottom-left-radius: 5px;
 }
 
-.chat-input-container {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-#chat-input {
-    flex: 1;
-    padding: 12px;
-    border: 2px solid #ddd;
-    border-radius: 25px;
-    font-size: 0.9rem;
-    outline: none;
-    transition: border-color 0.3s ease;
-}
-
-#chat-input:focus {
-    border-color: #3498db;
-}
-
-#send-message {
-    padding: 12px 15px;
-    background: #27ae60;
-}
-
-#send-message:hover {
-    background: #229954;
+.status-message.info {
+    background: #3498db;
+    color: white;
 }
 
 .modal {
@@ -455,6 +505,32 @@ h1 {
         gap: 5px;
     }
     
+    .game-mode-selector {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .mode-btn {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+    }
+    
+    .difficulty-selector {
+        flex-direction: column;
+        gap: 5px;
+        padding: 8px;
+    }
+    
+    .difficulty-label {
+        font-size: 0.8rem;
+    }
+    
+    .difficulty-btn {
+        font-size: 0.7rem;
+        padding: 4px 8px;
+        min-width: 35px;
+    }
+    
     .game-info {
         flex-direction: column;
         gap: 5px;
@@ -480,14 +556,6 @@ h1 {
     .btn {
         padding: 10px 15px;
         font-size: 0.8rem;
-    }
-    
-    .chat-container {
-        min-height: 150px;
-    }
-    
-    .chat-messages {
-        max-height: 200px;
     }
     
     .modal-content {

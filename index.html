@@ -20,6 +20,16 @@
                 <button id="login-btn" class="btn-small">로그인</button>
                 <button id="logout-btn" class="btn-small" style="display: none;">로그아웃</button>
             </div>
+            <div class="game-mode-selector">
+                <button id="pvp-mode" class="mode-btn active">👥 2인 플레이</button>
+                <button id="ai-mode" class="mode-btn">🤖 AI 대전</button>
+            </div>
+            <div id="difficulty-selector" class="difficulty-selector" style="display: none;">
+                <span class="difficulty-label">난이도:</span>
+                <button id="easy-difficulty" class="difficulty-btn active">하</button>
+                <button id="medium-difficulty" class="difficulty-btn">중</button>
+                <button id="hard-difficulty" class="difficulty-btn">상</button>
+            </div>
             <div class="game-info">
                 <div class="score">
                     <span class="player">흑: <span id="black-score">2</span></span>
@@ -42,12 +52,8 @@
             <button id="stats" class="btn">전적 보기</button>
         </div>
 
-        <div class="chat-container">
-            <div id="chat-messages" class="chat-messages"></div>
-            <div class="chat-input-container">
-                <input type="text" id="chat-input" placeholder="메시지를 입력하세요..." maxlength="100">
-                <button id="send-message" class="btn">전송</button>
-            </div>
+        <div class="status-container">
+            <div id="status-messages" class="status-messages"></div>
         </div>
 
         <!-- 사용자 등록/로그인 모달 -->

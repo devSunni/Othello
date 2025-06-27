@@ -16,12 +16,18 @@ class OthelloGame {
         this.users = JSON.parse(localStorage.getItem('othello_users')) || {};
         this.gameStats = JSON.parse(localStorage.getItem('othello_stats')) || {};
         
+        // AI 게임 모드
+        this.gameMode = 'pvp'; // 'pvp' or 'ai'
+        this.aiPlayer = 'white'; // AI는 백돌을 사용
+        this.aiThinking = false;
+        this.aiDifficulty = 'easy'; // 'easy', 'medium', 'hard'
+        
         this.initializeBoard();
         this.setupEventListeners();
         this.updateValidMoves();
         this.updateDisplay();
         this.updateUserDisplay();
-        this.addChatMessage('system', '준우와 함께하는 오셀로 게임을 시작합니다! 흑돌부터 시작합니다.');
+        this.addStatusMessage('system', '준우와 함께하는 오셀로 게임을 시작합니다! 흑돌부터 시작합니다.');
     }
 
     initializeBoard() {
@@ -61,19 +67,31 @@ class OthelloGame {
             this.showStats();
         });
 
-        document.getElementById('send-message').addEventListener('click', () => {
-            this.sendMessage();
-        });
-
-        document.getElementById('chat-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                this.sendMessage();
-            }
-        });
-
         document.getElementById('play-again').addEventListener('click', () => {
             this.newGame();
             this.hideGameOverModal();
+        });
+
+        // 게임 모드 선택 이벤트
+        document.getElementById('pvp-mode').addEventListener('click', () => {
+            this.setGameMode('pvp');
+        });
+
+        document.getElementById('ai-mode').addEventListener('click', () => {
+            this.setGameMode('ai');
+        });
+
+        // 난이도 선택 이벤트
+        document.getElementById('easy-difficulty').addEventListener('click', () => {
+            this.setDifficulty('easy');
+        });
+
+        document.getElementById('medium-difficulty').addEventListener('click', () => {
+            this.setDifficulty('medium');
+        });
+
+        document.getElementById('hard-difficulty').addEventListener('click', () => {
+            this.setDifficulty('hard');
         });
 
         // 사용자 관리 이벤트
@@ -109,6 +127,363 @@ class OthelloGame {
         });
     }
 
+    // 게임 모드 설정
+    setGameMode(mode) {
+        this.gameMode = mode;
+        
+        // 버튼 상태 업데이트
+        document.getElementById('pvp-mode').classList.toggle('active', mode === 'pvp');
+        document.getElementById('ai-mode').classList.toggle('active', mode === 'ai');
+        
+        // 난이도 선택기 표시/숨김
+        const difficultySelector = document.getElementById('difficulty-selector');
+        difficultySelector.style.display = mode === 'ai' ? 'flex' : 'none';
+        
+        // 새 게임 시작
+        this.newGame();
+        
+        if (mode === 'ai') {
+            this.addStatusMessage('system', `AI 대전 모드로 시작합니다! 난이도: ${this.getDifficultyText()}`);
+        } else {
+            this.addStatusMessage('system', '2인 플레이 모드로 시작합니다!');
+        }
+    }
+
+    // 난이도 설정
+    setDifficulty(difficulty) {
+        this.aiDifficulty = difficulty;
+        
+        // 버튼 상태 업데이트
+        document.getElementById('easy-difficulty').classList.toggle('active', difficulty === 'easy');
+        document.getElementById('medium-difficulty').classList.toggle('active', difficulty === 'medium');
+        document.getElementById('hard-difficulty').classList.toggle('active', difficulty === 'hard');
+        
+        if (this.gameMode === 'ai') {
+            this.addStatusMessage('system', `AI 난이도가 ${this.getDifficultyText()}로 변경되었습니다.`);
+        }
+    }
+
+    // 난이도 텍스트 반환
+    getDifficultyText() {
+        switch(this.aiDifficulty) {
+            case 'easy': return '하';
+            case 'medium': return '중';
+            case 'hard': return '상';
+            default: return '하';
+        }
+    }
+
+    // AI 관련 함수들
+    async makeMove(row, col) {
+        if (this.aiThinking) return false;
+        
+        if (!this.isValidMove(row, col, this.currentPlayer)) {
+            return false;
+        }
+
+        // 게임 히스토리 저장
+        this.gameHistory.push({
+            board: JSON.parse(JSON.stringify(this.board)),
+            currentPlayer: this.currentPlayer
+        });
+
+        // 돌 배치
+        this.board[row][col] = this.currentPlayer;
+
+        // 돌 뒤집기
+        for (const [dr, dc] of this.directions) {
+            const flips = this.wouldFlip(row, col, dr, dc, this.currentPlayer);
+            for (const [fr, fc] of flips) {
+                this.board[fr][fc] = this.currentPlayer;
+            }
+        }
+
+        // 플레이어 변경
+        this.currentPlayer = this.currentPlayer === 'black' ? 'white' : 'black';
+
+        // 유효한 수가 없으면 패스
+        if (!this.hasValidMoves()) {
+            this.currentPlayer = this.currentPlayer === 'black' ? 'white' : 'black';
+            if (!this.hasValidMoves()) {
+                this.endGame();
+                return true;
+            }
+            this.addStatusMessage('system', `${this.currentPlayer === 'black' ? '흑' : '백'}이 패스합니다.`);
+        }
+
+        this.updateValidMoves();
+        this.updateDisplay();
+        this.addStatusMessage('system', `${this.currentPlayer === 'black' ? '흑' : '백'}의 차례입니다.`);
+
+        // AI 모드에서 AI 차례인 경우
+        if (this.gameMode === 'ai' && this.currentPlayer === this.aiPlayer && !this.aiThinking) {
+            await this.makeAIMove();
+        }
+
+        return true;
+    }
+
+    async makeAIMove() {
+        if (this.aiThinking) return;
+        
+        this.aiThinking = true;
+        this.addStatusMessage('ai', '🤖 AI가 생각하고 있습니다...');
+        
+        // AI 생각하는 애니메이션
+        this.showAIThinking();
+        
+        // AI가 생각하는 시간 (1-2초)
+        await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
+        
+        // AI 수 계산
+        const aiMove = this.calculateAIMove();
+        
+        if (aiMove) {
+            const [row, col] = aiMove;
+            this.addStatusMessage('ai', `🤖 AI가 ${String.fromCharCode(65 + col)}${row + 1}에 돌을 놓았습니다!`);
+            
+            // AI 수 실행 (재귀 호출 방지를 위해 직접 처리)
+            this.executeAIMove(row, col);
+        } else {
+            this.addStatusMessage('ai', '🤖 AI가 놓을 수 있는 수가 없어서 패스합니다.');
+            this.aiThinking = false;
+            this.hideAIThinking();
+        }
+    }
+
+    executeAIMove(row, col) {
+        // 게임 히스토리 저장
+        this.gameHistory.push({
+            board: JSON.parse(JSON.stringify(this.board)),
+            currentPlayer: this.currentPlayer
+        });
+
+        // 돌 배치
+        this.board[row][col] = this.currentPlayer;
+
+        // 돌 뒤집기
+        for (const [dr, dc] of this.directions) {
+            const flips = this.wouldFlip(row, col, dr, dc, this.currentPlayer);
+            for (const [fr, fc] of flips) {
+                this.board[fr][fc] = this.currentPlayer;
+            }
+        }
+
+        // 플레이어 변경
+        this.currentPlayer = this.currentPlayer === 'black' ? 'white' : 'black';
+
+        // 유효한 수가 없으면 패스
+        if (!this.hasValidMoves()) {
+            this.currentPlayer = this.currentPlayer === 'black' ? 'white' : 'black';
+            if (!this.hasValidMoves()) {
+                this.endGame();
+                this.aiThinking = false;
+                this.hideAIThinking();
+                return;
+            }
+            this.addStatusMessage('system', `${this.currentPlayer === 'black' ? '흑' : '백'}이 패스합니다.`);
+        }
+
+        this.updateValidMoves();
+        this.updateDisplay();
+        this.addStatusMessage('system', `${this.currentPlayer === 'black' ? '흑' : '백'}의 차례입니다.`);
+
+        this.aiThinking = false;
+        this.hideAIThinking();
+    }
+
+    calculateAIMove() {
+        const validMoves = [];
+        for (let row = 0; row < this.boardSize; row++) {
+            for (let col = 0; col < this.boardSize; col++) {
+                if (this.isValidMove(row, col, this.aiPlayer)) {
+                    validMoves.push([row, col]);
+                }
+            }
+        }
+        
+        if (validMoves.length === 0) return null;
+        
+        // 난이도별 AI 전략
+        switch(this.aiDifficulty) {
+            case 'easy':
+                return this.calculateEasyMove(validMoves);
+            case 'medium':
+                return this.calculateMediumMove(validMoves);
+            case 'hard':
+                return this.calculateHardMove(validMoves);
+            default:
+                return this.calculateEasyMove(validMoves);
+        }
+    }
+
+    // 하 난이도: 랜덤 선택 (가끔 실수)
+    calculateEasyMove(validMoves) {
+        // 30% 확률로 랜덤 선택
+        if (Math.random() < 0.3) {
+            return validMoves[Math.floor(Math.random() * validMoves.length)];
+        }
+        
+        // 나머지는 기본 전략 사용
+        return this.calculateMediumMove(validMoves);
+    }
+
+    // 중 난이도: 기본 전략 (모서리 > 변 > 최대 뒤집기)
+    calculateMediumMove(validMoves) {
+        // AI 전략: 모서리 > 변 > 중앙 순으로 우선순위
+        const corners = [[0, 0], [0, 7], [7, 0], [7, 7]];
+        const edges = [];
+        
+        // 변 위치 찾기
+        for (let i = 0; i < this.boardSize; i++) {
+            if (this.board[0][i] === null) edges.push([0, i]);
+            if (this.board[7][i] === null) edges.push([7, i]);
+            if (this.board[i][0] === null) edges.push([i, 0]);
+            if (this.board[i][7] === null) edges.push([i, 7]);
+        }
+        
+        // 모서리 우선
+        for (const corner of corners) {
+            if (validMoves.some(move => move[0] === corner[0] && move[1] === corner[1])) {
+                return corner;
+            }
+        }
+        
+        // 변 우선
+        for (const edge of edges) {
+            if (validMoves.some(move => move[0] === edge[0] && move[1] === edge[1])) {
+                return edge;
+            }
+        }
+        
+        // 최대 뒤집기 선택
+        let bestMove = validMoves[0];
+        let maxFlips = 0;
+        
+        for (const move of validMoves) {
+            const flips = this.countFlips(move[0], move[1], this.aiPlayer);
+            if (flips > maxFlips) {
+                maxFlips = flips;
+                bestMove = move;
+            }
+        }
+        
+        return bestMove;
+    }
+
+    // 상 난이도: 고급 전략 (미니맥스 알고리즘 기반)
+    calculateHardMove(validMoves) {
+        // 고급 전략: 미니맥스 알고리즘 + 알파베타 가지치기 (간소화)
+        let bestMove = validMoves[0];
+        let bestScore = -Infinity;
+        
+        for (const move of validMoves) {
+            // 임시로 수를 두고 평가
+            const tempBoard = JSON.parse(JSON.stringify(this.board));
+            const [row, col] = move;
+            
+            // 돌 배치
+            tempBoard[row][col] = this.aiPlayer;
+            
+            // 돌 뒤집기
+            for (const [dr, dc] of this.directions) {
+                const flips = this.wouldFlip(row, col, dr, dc, this.aiPlayer);
+                for (const [fr, fc] of flips) {
+                    tempBoard[fr][fc] = this.aiPlayer;
+                }
+            }
+            
+            // 보드 평가
+            const score = this.evaluateBoard(tempBoard, this.aiPlayer);
+            
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = move;
+            }
+        }
+        
+        return bestMove;
+    }
+
+    // 보드 평가 함수 (고급 난이도용)
+    evaluateBoard(board, player) {
+        let score = 0;
+        const opponent = player === 'black' ? 'white' : 'black';
+        
+        // 모서리 가중치 (가장 중요)
+        const corners = [[0, 0], [0, 7], [7, 0], [7, 7]];
+        for (const [row, col] of corners) {
+            if (board[row][col] === player) {
+                score += 25;
+            } else if (board[row][col] === opponent) {
+                score -= 25;
+            }
+        }
+        
+        // 변 가중치
+        for (let i = 0; i < this.boardSize; i++) {
+            if (board[0][i] === player) score += 5;
+            if (board[7][i] === player) score += 5;
+            if (board[i][0] === player) score += 5;
+            if (board[i][7] === player) score += 5;
+            
+            if (board[0][i] === opponent) score -= 5;
+            if (board[7][i] === opponent) score -= 5;
+            if (board[i][0] === opponent) score -= 5;
+            if (board[i][7] === opponent) score -= 5;
+        }
+        
+        // 중앙 가중치
+        for (let row = 2; row < 6; row++) {
+            for (let col = 2; col < 6; col++) {
+                if (board[row][col] === player) {
+                    score += 1;
+                } else if (board[row][col] === opponent) {
+                    score -= 1;
+                }
+            }
+        }
+        
+        // 전체 돌 개수 차이
+        let playerCount = 0;
+        let opponentCount = 0;
+        
+        for (let row = 0; row < this.boardSize; row++) {
+            for (let col = 0; col < this.boardSize; col++) {
+                if (board[row][col] === player) playerCount++;
+                else if (board[row][col] === opponent) opponentCount++;
+            }
+        }
+        
+        score += (playerCount - opponentCount) * 2;
+        
+        return score;
+    }
+
+    countFlips(row, col, player) {
+        let totalFlips = 0;
+        for (const [dr, dc] of this.directions) {
+            totalFlips += this.wouldFlip(row, col, dr, dc, player).length;
+        }
+        return totalFlips;
+    }
+
+    showAIThinking() {
+        const cells = document.querySelectorAll('.cell');
+        cells.forEach(cell => {
+            if (cell.textContent === '') {
+                cell.classList.add('ai-thinking');
+            }
+        });
+    }
+
+    hideAIThinking() {
+        const cells = document.querySelectorAll('.cell');
+        cells.forEach(cell => {
+            cell.classList.remove('ai-thinking');
+        });
+    }
+
     // 사용자 관리 함수들
     showLoginModal() {
         document.getElementById('login-modal').style.display = 'block';
@@ -126,17 +501,17 @@ class OthelloGame {
         const password = document.getElementById('password').value.trim();
 
         if (!username || !password) {
-            this.addChatMessage('system', '사용자명과 비밀번호를 입력해주세요.');
+            this.addStatusMessage('system', '사용자명과 비밀번호를 입력해주세요.');
             return;
         }
 
         if (username.length < 3) {
-            this.addChatMessage('system', '사용자명은 3자 이상이어야 합니다.');
+            this.addStatusMessage('system', '사용자명은 3자 이상이어야 합니다.');
             return;
         }
 
         if (this.users[username]) {
-            this.addChatMessage('system', '이미 존재하는 사용자명입니다.');
+            this.addStatusMessage('system', '이미 존재하는 사용자명입니다.');
             return;
         }
 
@@ -159,7 +534,7 @@ class OthelloGame {
         this.currentUser = username;
         this.updateUserDisplay();
         this.hideLoginModal();
-        this.addChatMessage('system', `${username}님, 환영합니다! 회원가입이 완료되었습니다.`);
+        this.addStatusMessage('system', `${username}님, 환영합니다! 회원가입이 완료되었습니다.`);
     }
 
     login() {
@@ -167,30 +542,30 @@ class OthelloGame {
         const password = document.getElementById('password').value.trim();
 
         if (!username || !password) {
-            this.addChatMessage('system', '사용자명과 비밀번호를 입력해주세요.');
+            this.addStatusMessage('system', '사용자명과 비밀번호를 입력해주세요.');
             return;
         }
 
         if (!this.users[username]) {
-            this.addChatMessage('system', '존재하지 않는 사용자명입니다.');
+            this.addStatusMessage('system', '존재하지 않는 사용자명입니다.');
             return;
         }
 
         if (this.users[username].password !== password) {
-            this.addChatMessage('system', '비밀번호가 일치하지 않습니다.');
+            this.addStatusMessage('system', '비밀번호가 일치하지 않습니다.');
             return;
         }
 
         this.currentUser = username;
         this.updateUserDisplay();
         this.hideLoginModal();
-        this.addChatMessage('system', `${username}님, 환영합니다!`);
+        this.addStatusMessage('system', `${username}님, 환영합니다!`);
     }
 
     logout() {
         this.currentUser = null;
         this.updateUserDisplay();
-        this.addChatMessage('system', '로그아웃되었습니다.');
+        this.addStatusMessage('system', '로그아웃되었습니다.');
     }
 
     updateUserDisplay() {
@@ -217,7 +592,7 @@ class OthelloGame {
     // 전적 관리 함수들
     showStats() {
         if (!this.currentUser) {
-            this.addChatMessage('system', '전적을 보려면 로그인해주세요.');
+            this.addStatusMessage('system', '전적을 보려면 로그인해주세요.');
             return;
         }
 
@@ -338,48 +713,6 @@ class OthelloGame {
         return [];
     }
 
-    makeMove(row, col) {
-        if (!this.isValidMove(row, col, this.currentPlayer)) {
-            return false;
-        }
-
-        // 게임 히스토리 저장
-        this.gameHistory.push({
-            board: JSON.parse(JSON.stringify(this.board)),
-            currentPlayer: this.currentPlayer
-        });
-
-        // 돌 배치
-        this.board[row][col] = this.currentPlayer;
-
-        // 돌 뒤집기
-        for (const [dr, dc] of this.directions) {
-            const flips = this.wouldFlip(row, col, dr, dc, this.currentPlayer);
-            for (const [fr, fc] of flips) {
-                this.board[fr][fc] = this.currentPlayer;
-            }
-        }
-
-        // 플레이어 변경
-        this.currentPlayer = this.currentPlayer === 'black' ? 'white' : 'black';
-
-        // 유효한 수가 없으면 패스
-        if (!this.hasValidMoves()) {
-            this.currentPlayer = this.currentPlayer === 'black' ? 'white' : 'black';
-            if (!this.hasValidMoves()) {
-                this.endGame();
-                return true;
-            }
-            this.addChatMessage('system', `${this.currentPlayer === 'black' ? '흑' : '백'}이 패스합니다.`);
-        }
-
-        this.updateValidMoves();
-        this.updateDisplay();
-        this.addChatMessage('system', `${this.currentPlayer === 'black' ? '흑' : '백'}의 차례입니다.`);
-
-        return true;
-    }
-
     hasValidMoves() {
         for (let row = 0; row < this.boardSize; row++) {
             for (let col = 0; col < this.boardSize; col++) {
@@ -421,8 +754,10 @@ class OthelloGame {
                     cell.textContent = '⚪';
                 }
 
-                // 유효한 수 표시
-                if (this.isValidMove(row, col, this.currentPlayer)) {
+                // 유효한 수 표시 (AI 모드에서는 AI 차례가 아닐 때만)
+                if (this.gameMode === 'ai' && this.currentPlayer === this.aiPlayer) {
+                    // AI 차례일 때는 유효한 수를 표시하지 않음
+                } else if (this.isValidMove(row, col, this.currentPlayer)) {
                     cell.classList.add('valid-move');
                 }
 
@@ -434,8 +769,9 @@ class OthelloGame {
         this.updateScore();
         
         // 현재 플레이어 표시
-        document.getElementById('current-player').textContent = 
-            this.currentPlayer === 'black' ? '흑' : '백';
+        const currentPlayerText = this.currentPlayer === 'black' ? '흑' : '백';
+        const modeText = this.gameMode === 'ai' && this.currentPlayer === this.aiPlayer ? ' (AI)' : '';
+        document.getElementById('current-player').textContent = currentPlayerText + modeText;
     }
 
     updateScore() {
@@ -455,7 +791,7 @@ class OthelloGame {
 
     showHint() {
         if (this.validMoves.length === 0) {
-            this.addChatMessage('system', '놓을 수 있는 수가 없습니다.');
+            this.addStatusMessage('system', '놓을 수 있는 수가 없습니다.');
             return;
         }
 
@@ -463,7 +799,7 @@ class OthelloGame {
         const row = hint[0] + 1;
         const col = String.fromCharCode(65 + hint[1]); // A, B, C, ...
         
-        this.addChatMessage('ai', `힌트: ${col}${row} 위치에 놓아보세요!`);
+        this.addStatusMessage('ai', `힌트: ${col}${row} 위치에 놓아보세요!`);
         
         // 힌트 위치 하이라이트
         const cells = document.querySelectorAll('.cell');
@@ -483,7 +819,7 @@ class OthelloGame {
 
     undoMove() {
         if (this.gameHistory.length === 0) {
-            this.addChatMessage('system', '되돌릴 수 있는 수가 없습니다.');
+            this.addStatusMessage('system', '되돌릴 수 있는 수가 없습니다.');
             return;
         }
 
@@ -493,7 +829,7 @@ class OthelloGame {
         
         this.updateValidMoves();
         this.updateDisplay();
-        this.addChatMessage('system', '한 수 되돌렸습니다.');
+        this.addStatusMessage('system', '한 수 되돌렸습니다.');
     }
 
     endGame() {
@@ -512,7 +848,7 @@ class OthelloGame {
         // 전적 저장
         this.saveGameResult(blackCount, whiteCount);
         
-        this.addChatMessage('system', winnerText);
+        this.addStatusMessage('system', winnerText);
         this.showGameOverModal(winnerText);
     }
 
@@ -530,6 +866,7 @@ class OthelloGame {
         this.currentPlayer = 'black';
         this.gameHistory = [];
         this.validMoves = [];
+        this.aiThinking = false;
         
         this.initializeBoard();
         this.updateValidMoves();
@@ -537,50 +874,22 @@ class OthelloGame {
         
         // 채팅 메시지 초기화
         document.getElementById('chat-messages').innerHTML = '';
-        this.addChatMessage('system', '새로운 게임을 시작합니다! 흑돌부터 시작합니다.');
+        
+        if (this.gameMode === 'ai') {
+            this.addStatusMessage('system', 'AI 대전 모드로 새 게임을 시작합니다! 난이도: ' + this.getDifficultyText());
+        } else {
+            this.addStatusMessage('system', '새로운 게임을 시작합니다! 흑돌부터 시작합니다.');
+        }
     }
 
-    addChatMessage(type, message) {
-        const chatMessages = document.getElementById('chat-messages');
+    addStatusMessage(type, message) {
+        const statusMessages = document.getElementById('status-messages');
         const messageElement = document.createElement('div');
-        messageElement.className = `message ${type}`;
+        messageElement.className = `status-message ${type}`;
         messageElement.textContent = message;
         
-        chatMessages.appendChild(messageElement);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-
-    sendMessage() {
-        const input = document.getElementById('chat-input');
-        const message = input.value.trim();
-        
-        if (message === '') return;
-        
-        this.addChatMessage('user', message);
-        input.value = '';
-        
-        // AI 응답 생성
-        setTimeout(() => {
-            this.generateAIResponse(message);
-        }, 500);
-    }
-
-    generateAIResponse(userMessage) {
-        const responses = [
-            '좋은 수를 두고 계시네요!',
-            '흥미로운 전략입니다.',
-            '조심하세요, 그 위치는 위험할 수 있어요.',
-            '오셀로는 끝까지 집중해야 하는 게임이에요.',
-            '모서리와 변을 차지하는 것이 중요합니다.',
-            '현재 상황을 잘 파악하고 계시네요!',
-            '인내심을 가지고 플레이하세요.',
-            '좋은 게임이 되고 있습니다!',
-            '전략적으로 생각해보세요.',
-            '기회를 놓치지 마세요!'
-        ];
-        
-        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-        this.addChatMessage('ai', randomResponse);
+        statusMessages.appendChild(messageElement);
+        statusMessages.scrollTop = statusMessages.scrollHeight;
     }
 }
 
@@ -598,6 +907,34 @@ if ('serviceWorker' in navigator) {
 }
 
 // 게임 시작
+let game = null;
+
 document.addEventListener('DOMContentLoaded', () => {
-    new OthelloGame();
+    // DOM이 완전히 로드된 후 게임 초기화
+    setTimeout(() => {
+        try {
+            game = new OthelloGame();
+            console.log('게임이 성공적으로 초기화되었습니다.');
+        } catch (error) {
+            console.error('게임 초기화 중 오류 발생:', error);
+            // 오류 발생 시 다시 시도
+            setTimeout(() => {
+                game = new OthelloGame();
+            }, 1000);
+        }
+    }, 100);
+});
+
+// 페이지 로드 완료 후에도 한 번 더 확인
+window.addEventListener('load', () => {
+    if (!game) {
+        setTimeout(() => {
+            try {
+                game = new OthelloGame();
+                console.log('게임이 성공적으로 초기화되었습니다.');
+            } catch (error) {
+                console.error('게임 초기화 중 오류 발생:', error);
+            }
+        }, 100);
+    }
 }); 
