@@ -1,11 +1,11 @@
-const CACHE_NAME = 'othello-game-v2';
+const CACHE_NAME = 'othello-game-v3';
 const urlsToCache = [
-    '/',
-    '/index.html',
-    '/style.css',
-    '/script.js',
-    '/manifest.json',
-    '/icon.svg'
+    '/Othello/',
+    '/Othello/index.html',
+    '/Othello/style.css',
+    '/Othello/script.js',
+    '/Othello/manifest.json',
+    '/Othello/icon.svg'
 ];
 
 self.addEventListener('install', event => {
