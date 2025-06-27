@@ -35,6 +35,39 @@ h1 {
     color: #2c3e50;
 }
 
+.user-info {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding: 8px;
+    background: rgba(52, 152, 219, 0.1);
+    border-radius: 10px;
+}
+
+#current-user {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.btn-small {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 15px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.btn-small:hover {
+    background: #2980b9;
+    transform: translateY(-1px);
+}
+
 .game-info {
     display: flex;
     justify-content: space-between;
@@ -268,6 +301,7 @@ h1 {
     text-align: center;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     animation: modalSlideIn 0.3s ease;
+    position: relative;
 }
 
 @keyframes modalSlideIn {
@@ -292,6 +326,120 @@ h1 {
     color: #7f8c8d;
 }
 
+.btn-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #7f8c8d;
+    transition: color 0.3s ease;
+}
+
+.btn-close:hover {
+    color: #e74c3c;
+}
+
+/* 로그인 폼 스타일 */
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.login-form input {
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+.login-form input:focus {
+    border-color: #3498db;
+}
+
+.login-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.login-buttons .btn {
+    flex: 1;
+    max-width: 120px;
+}
+
+/* 전적 보기 스타일 */
+.stats-summary {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.stat-label {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.stats-history {
+    text-align: left;
+}
+
+.stats-history h3 {
+    margin-bottom: 10px;
+    color: #2c3e50;
+}
+
+#game-history {
+    max-height: 200px;
+    overflow-y: auto;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.game-record {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    margin-bottom: 5px;
+    background: white;
+    border-radius: 5px;
+    font-size: 0.9rem;
+}
+
+.game-record.win {
+    border-left: 4px solid #27ae60;
+}
+
+.game-record.loss {
+    border-left: 4px solid #e74c3c;
+}
+
+.game-record.draw {
+    border-left: 4px solid #f39c12;
+}
+
 /* 모바일 최적화 */
 @media (max-width: 480px) {
     .container {
@@ -300,6 +448,11 @@ h1 {
     
     h1 {
         font-size: 1.5rem;
+    }
+    
+    .user-info {
+        flex-direction: column;
+        gap: 5px;
     }
     
     .game-info {
@@ -340,6 +493,18 @@ h1 {
     .modal-content {
         margin: 20% auto;
         padding: 20px;
+    }
+    
+    .stats-summary {
+        grid-template-columns: 1fr;
+    }
+    
+    .login-buttons {
+        flex-direction: column;
+    }
+    
+    .login-buttons .btn {
+        max-width: none;
     }
 }
 
@@ -382,5 +547,25 @@ h1 {
         background: #34495e;
         color: white;
         border-color: #7f8c8d;
+    }
+    
+    .stats-summary {
+        background: #34495e;
+        color: white;
+    }
+    
+    .stat-item {
+        background: #2c3e50;
+        color: white;
+    }
+    
+    #game-history {
+        background: #34495e;
+        color: white;
+    }
+    
+    .game-record {
+        background: #2c3e50;
+        color: white;
     }
 } 

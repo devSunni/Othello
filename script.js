@@ -11,11 +11,17 @@ class OthelloGame {
             [1, -1],  [1, 0],  [1, 1]
         ];
         
+        // 사용자 관리
+        this.currentUser = null;
+        this.users = JSON.parse(localStorage.getItem('othello_users')) || {};
+        this.gameStats = JSON.parse(localStorage.getItem('othello_stats')) || {};
+        
         this.initializeBoard();
         this.setupEventListeners();
         this.updateValidMoves();
         this.updateDisplay();
-        this.addChatMessage('system', '오셀로 게임을 시작합니다! 흑돌부터 시작합니다.');
+        this.updateUserDisplay();
+        this.addChatMessage('system', '준우와 함께하는 오셀로 게임을 시작합니다! 흑돌부터 시작합니다.');
     }
 
     initializeBoard() {
@@ -51,6 +57,10 @@ class OthelloGame {
             this.undoMove();
         });
 
+        document.getElementById('stats').addEventListener('click', () => {
+            this.showStats();
+        });
+
         document.getElementById('send-message').addEventListener('click', () => {
             this.sendMessage();
         });
@@ -65,6 +75,236 @@ class OthelloGame {
             this.newGame();
             this.hideGameOverModal();
         });
+
+        // 사용자 관리 이벤트
+        document.getElementById('login-btn').addEventListener('click', () => {
+            this.showLoginModal();
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            this.logout();
+        });
+
+        document.getElementById('register-btn').addEventListener('click', () => {
+            this.register();
+        });
+
+        document.getElementById('login-submit-btn').addEventListener('click', () => {
+            this.login();
+        });
+
+        document.getElementById('close-login').addEventListener('click', () => {
+            this.hideLoginModal();
+        });
+
+        document.getElementById('close-stats').addEventListener('click', () => {
+            this.hideStatsModal();
+        });
+
+        // 모달 외부 클릭 시 닫기
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                e.target.style.display = 'none';
+            }
+        });
+    }
+
+    // 사용자 관리 함수들
+    showLoginModal() {
+        document.getElementById('login-modal').style.display = 'block';
+        document.getElementById('username').focus();
+    }
+
+    hideLoginModal() {
+        document.getElementById('login-modal').style.display = 'none';
+        document.getElementById('username').value = '';
+        document.getElementById('password').value = '';
+    }
+
+    register() {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
+
+        if (!username || !password) {
+            this.addChatMessage('system', '사용자명과 비밀번호를 입력해주세요.');
+            return;
+        }
+
+        if (username.length < 3) {
+            this.addChatMessage('system', '사용자명은 3자 이상이어야 합니다.');
+            return;
+        }
+
+        if (this.users[username]) {
+            this.addChatMessage('system', '이미 존재하는 사용자명입니다.');
+            return;
+        }
+
+        // 사용자 등록
+        this.users[username] = {
+            password: password,
+            createdAt: new Date().toISOString()
+        };
+
+        // 전적 초기화
+        this.gameStats[username] = {
+            totalGames: 0,
+            wins: 0,
+            losses: 0,
+            draws: 0,
+            gameHistory: []
+        };
+
+        this.saveData();
+        this.currentUser = username;
+        this.updateUserDisplay();
+        this.hideLoginModal();
+        this.addChatMessage('system', `${username}님, 환영합니다! 회원가입이 완료되었습니다.`);
+    }
+
+    login() {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
+
+        if (!username || !password) {
+            this.addChatMessage('system', '사용자명과 비밀번호를 입력해주세요.');
+            return;
+        }
+
+        if (!this.users[username]) {
+            this.addChatMessage('system', '존재하지 않는 사용자명입니다.');
+            return;
+        }
+
+        if (this.users[username].password !== password) {
+            this.addChatMessage('system', '비밀번호가 일치하지 않습니다.');
+            return;
+        }
+
+        this.currentUser = username;
+        this.updateUserDisplay();
+        this.hideLoginModal();
+        this.addChatMessage('system', `${username}님, 환영합니다!`);
+    }
+
+    logout() {
+        this.currentUser = null;
+        this.updateUserDisplay();
+        this.addChatMessage('system', '로그아웃되었습니다.');
+    }
+
+    updateUserDisplay() {
+        const currentUserElement = document.getElementById('current-user');
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        if (this.currentUser) {
+            currentUserElement.textContent = this.currentUser;
+            loginBtn.style.display = 'none';
+            logoutBtn.style.display = 'inline-block';
+        } else {
+            currentUserElement.textContent = '게스트';
+            loginBtn.style.display = 'inline-block';
+            logoutBtn.style.display = 'none';
+        }
+    }
+
+    saveData() {
+        localStorage.setItem('othello_users', JSON.stringify(this.users));
+        localStorage.setItem('othello_stats', JSON.stringify(this.gameStats));
+    }
+
+    // 전적 관리 함수들
+    showStats() {
+        if (!this.currentUser) {
+            this.addChatMessage('system', '전적을 보려면 로그인해주세요.');
+            return;
+        }
+
+        const stats = this.gameStats[this.currentUser];
+        document.getElementById('total-games').textContent = stats.totalGames;
+        document.getElementById('wins').textContent = stats.wins;
+        document.getElementById('losses').textContent = stats.losses;
+        
+        const winRate = stats.totalGames > 0 ? Math.round((stats.wins / stats.totalGames) * 100) : 0;
+        document.getElementById('win-rate').textContent = `${winRate}%`;
+
+        this.updateGameHistory();
+        document.getElementById('stats-modal').style.display = 'block';
+    }
+
+    hideStatsModal() {
+        document.getElementById('stats-modal').style.display = 'none';
+    }
+
+    updateGameHistory() {
+        const historyContainer = document.getElementById('game-history');
+        const stats = this.gameStats[this.currentUser];
+        
+        historyContainer.innerHTML = '';
+        
+        if (stats.gameHistory.length === 0) {
+            historyContainer.innerHTML = '<p style="text-align: center; color: #7f8c8d;">아직 게임 기록이 없습니다.</p>';
+            return;
+        }
+
+        // 최근 10개 게임만 표시
+        const recentGames = stats.gameHistory.slice(-10).reverse();
+        
+        recentGames.forEach(game => {
+            const gameRecord = document.createElement('div');
+            gameRecord.className = `game-record ${game.result}`;
+            
+            const date = new Date(game.date).toLocaleDateString('ko-KR');
+            const time = new Date(game.date).toLocaleTimeString('ko-KR', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            gameRecord.innerHTML = `
+                <span>${date} ${time}</span>
+                <span>${game.blackScore}:${game.whiteScore} (${this.getResultText(game.result)})</span>
+            `;
+            
+            historyContainer.appendChild(gameRecord);
+        });
+    }
+
+    getResultText(result) {
+        switch(result) {
+            case 'win': return '승리';
+            case 'loss': return '패배';
+            case 'draw': return '무승부';
+            default: return '알 수 없음';
+        }
+    }
+
+    saveGameResult(blackScore, whiteScore) {
+        if (!this.currentUser) return;
+
+        const stats = this.gameStats[this.currentUser];
+        stats.totalGames++;
+        
+        let result;
+        if (blackScore > whiteScore) {
+            stats.wins++;
+            result = 'win';
+        } else if (whiteScore > blackScore) {
+            stats.losses++;
+            result = 'loss';
+        } else {
+            stats.draws++;
+            result = 'draw';
+        }
+
+        stats.gameHistory.push({
+            date: new Date().toISOString(),
+            blackScore: blackScore,
+            whiteScore: whiteScore,
+            result: result
+        });
+
+        this.saveData();
     }
 
     isValidMove(row, col, player) {
@@ -268,6 +508,9 @@ class OthelloGame {
         } else {
             winnerText = `게임 종료! ${blackCount}:${whiteCount}로 무승부입니다!`;
         }
+        
+        // 전적 저장
+        this.saveGameResult(blackCount, whiteCount);
         
         this.addChatMessage('system', winnerText);
         this.showGameOverModal(winnerText);

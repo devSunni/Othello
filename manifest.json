@@ -1,7 +1,7 @@
 {
-    "name": "오셀로 게임",
-    "short_name": "오셀로",
-    "description": "스마트폰용 대화형 오셀로 게임",
+    "name": "준우와 함께하는 오셀로 게임",
+    "short_name": "준우 오셀로",
+    "description": "준우와 함께하는 스마트폰용 대화형 오셀로 게임",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#667eea",
