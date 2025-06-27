@@ -184,8 +184,9 @@ h1 {
     padding: 10px;
     border-radius: 10px;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-    max-width: 350px;
-    width: 100%;
+    max-width: 600px;
+    width: 600px;
+    height: 600px;
 }
 
 .cell {
@@ -697,10 +698,10 @@ h1 {
     }
     
     .board {
-        max-width: 60vh;
-        max-height: 60vh;
-        width: 60vh;
-        height: 60vh;
+        max-width: 75vh;
+        max-height: 75vh;
+        width: 75vh;
+        height: 75vh;
     }
     
     .cell {
@@ -768,10 +769,10 @@ h1 {
     }
     
     .board {
-        max-width: 70vh;
-        max-height: 70vh;
-        width: 70vh;
-        height: 70vh;
+        max-width: 75vh;
+        max-height: 75vh;
+        width: 75vh;
+        height: 75vh;
     }
     
     .controls {

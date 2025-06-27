@@ -12,7 +12,7 @@ class OthelloGame {
         ];
         
         // 사용자 관리
-        this.currentUser = null;
+        this.currentUser = localStorage.getItem('othello_current_user') || null;
         this.users = JSON.parse(localStorage.getItem('othello_users')) || {};
         this.gameStats = JSON.parse(localStorage.getItem('othello_stats')) || {};
         
@@ -20,7 +20,7 @@ class OthelloGame {
         this.gameMode = 'pvp'; // 'pvp' or 'ai'
         this.aiPlayer = 'white'; // AI는 백돌을 사용
         this.aiThinking = false;
-        this.aiDifficulty = 'easy'; // 'easy', 'medium', 'hard'
+        this.aiDifficulty = 'medium'; // 'easy', 'medium', 'hard'
         
         this.initializeBoard();
         this.setupEventListeners();
@@ -191,11 +191,18 @@ class OthelloGame {
         this.board[row][col] = this.currentPlayer;
 
         // 돌 뒤집기
+        let flippedCount = 0;
         for (const [dr, dc] of this.directions) {
             const flips = this.wouldFlip(row, col, dr, dc, this.currentPlayer);
             for (const [fr, fc] of flips) {
                 this.board[fr][fc] = this.currentPlayer;
+                flippedCount++;
             }
+        }
+
+        // 뒤집힌 돌이 있으면 효과음 재생
+        if (flippedCount > 0) {
+            this.playSound('flip');
         }
 
         // 플레이어 변경
@@ -219,6 +226,9 @@ class OthelloGame {
         if (this.gameMode === 'ai' && this.currentPlayer === this.aiPlayer && !this.aiThinking) {
             await this.makeAIMove();
         }
+
+        // 효과음 재생
+        this.playSound('place');
 
         return true;
     }
@@ -249,6 +259,9 @@ class OthelloGame {
             this.aiThinking = false;
             this.hideAIThinking();
         }
+
+        // 효과음 재생
+        this.playSound('ai');
     }
 
     executeAIMove(row, col) {
@@ -262,11 +275,18 @@ class OthelloGame {
         this.board[row][col] = this.currentPlayer;
 
         // 돌 뒤집기
+        let flippedCount = 0;
         for (const [dr, dc] of this.directions) {
             const flips = this.wouldFlip(row, col, dr, dc, this.currentPlayer);
             for (const [fr, fc] of flips) {
                 this.board[fr][fc] = this.currentPlayer;
+                flippedCount++;
             }
+        }
+
+        // 뒤집힌 돌이 있으면 효과음 재생
+        if (flippedCount > 0) {
+            this.playSound('flip');
         }
 
         // 플레이어 변경
@@ -290,6 +310,9 @@ class OthelloGame {
 
         this.aiThinking = false;
         this.hideAIThinking();
+
+        // 효과음 재생
+        this.playSound('place');
     }
 
     calculateAIMove() {
@@ -386,10 +409,12 @@ class OthelloGame {
             tempBoard[row][col] = this.aiPlayer;
             
             // 돌 뒤집기
+            let flippedCount = 0;
             for (const [dr, dc] of this.directions) {
                 const flips = this.wouldFlip(row, col, dr, dc, this.aiPlayer);
                 for (const [fr, fc] of flips) {
                     tempBoard[fr][fc] = this.aiPlayer;
+                    flippedCount++;
                 }
             }
             
@@ -848,6 +873,9 @@ class OthelloGame {
         // 전적 저장
         this.saveGameResult(blackCount, whiteCount);
         
+        // 승리 효과음 재생
+        this.playSound('win');
+        
         this.addStatusMessage('system', winnerText);
         this.showGameOverModal(winnerText);
     }
@@ -890,6 +918,20 @@ class OthelloGame {
         
         statusMessages.appendChild(messageElement);
         statusMessages.scrollTop = statusMessages.scrollHeight;
+    }
+
+    // 효과음 재생 함수
+    playSound(soundType) {
+        try {
+            const audio = document.getElementById(`${soundType}-sound`);
+            if (audio) {
+                audio.currentTime = 0;
+                audio.volume = 0.3; // 볼륨을 30%로 설정
+                audio.play().catch(e => console.log('효과음 재생 실패:', e));
+            }
+        } catch (e) {
+            console.log('효과음 재생 오류:', e);
+        }
     }
 }
 
