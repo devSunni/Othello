@@ -761,7 +761,7 @@ class OthelloGame {
     }
 
     isValidMove(row, col, player) {
-        if (this.board[row][col] !== null) return false;
+        if (this.board[row][col] !== 0) return false;
 
         for (const [dr, dc] of this.directions) {
             if (this.wouldFlip(row, col, dr, dc, player).length > 0) {
@@ -802,9 +802,23 @@ class OthelloGame {
         return false;
     }
 
+    updateValidMoves() {
+        this.validMoves = [];
+        for (let i = 0; i < this.boardSize; i++) {
+            for (let j = 0; j < this.boardSize; j++) {
+                if (this.isValidMove(i, j, this.currentPlayer)) {
+                    this.validMoves.push([i, j]);
+                }
+            }
+        }
+    }
+
     updateDisplay() {
         const board = document.getElementById('board');
         board.innerHTML = '';
+        
+        // 유효한 수 업데이트 (표시는 하지 않지만 게임 로직을 위해 필요)
+        this.updateValidMoves();
         
         for (let i = 0; i < this.boardSize; i++) {
             for (let j = 0; j < this.boardSize; j++) {
@@ -915,7 +929,12 @@ class OthelloGame {
         this.updateDisplay();
         
         // 채팅 메시지 초기화
-        document.getElementById('chat-messages').innerHTML = '';
+        const statusMessages = document.getElementById('status-messages');
+        if (statusMessages) {
+            statusMessages.innerHTML = '';
+        }
+        
+        this.addStatusMessage('system', '새 게임이 시작되었습니다!');
         
         if (this.gameMode === 'ai') {
             this.addStatusMessage('system', 'AI 대전 모드로 새 게임을 시작합니다! 난이도: ' + this.getDifficultyText());
@@ -1143,7 +1162,7 @@ class OthelloGame {
         ];
         
         this.initializeBoard();
-        this.updateUserDisplay();
+        this.updateDisplay();
         
         // AI 모드가 기본이므로 난이도 선택기 표시
         const difficultySelector = document.getElementById('difficulty-selector');
