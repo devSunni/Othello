@@ -1,0 +1,25 @@
+{
+  "name": "othello-game",
+  "version": "1.0.0",
+  "description": "준우와 함께하는 오셀로 게임",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'Build completed'",
+    "android": "npx cap run android",
+    "ios": "npx cap run ios",
+    "sync": "npx cap sync"
+  },
+  "keywords": [
+    "othello",
+    "game",
+    "pwa",
+    "capacitor"
+  ],
+  "author": "준우",
+  "license": "MIT",
+  "devDependencies": {
+    "@capacitor/android": "^5.0.0",
+    "@capacitor/cli": "^5.0.0",
+    "@capacitor/core": "^5.0.0"
+  }
+} 

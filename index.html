@@ -2,14 +2,23 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="description" content="준우와 함께하는 스마트폰용 대화형 오셀로 게임">
     <meta name="theme-color" content="#2c3e50">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="오셀로 게임">
+    <meta name="application-name" content="오셀로 게임">
+    <meta name="msapplication-TileColor" content="#2c3e50">
+    <meta name="msapplication-tap-highlight" content="no">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="audio-playback-policy" content="user-interaction-required">
     <title>준우와 함께하는 오셀로 게임</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="icon-192x192.png">
-    <link rel="apple-touch-icon" href="icon-192x192.png">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="apple-touch-icon" href="icon.svg">
 </head>
 <body>
     <div class="container">
@@ -21,10 +30,10 @@
                 <button id="logout-btn" class="btn-small" style="display: none;">로그아웃</button>
             </div>
             <div class="game-mode-selector">
-                <button id="pvp-mode" class="mode-btn active">👥 2인 플레이</button>
-                <button id="ai-mode" class="mode-btn">🤖 AI 대전</button>
+                <button id="pvp-mode" class="mode-btn">👥 2인 플레이</button>
+                <button id="ai-mode" class="mode-btn active">🤖 AI 대전</button>
             </div>
-            <div id="difficulty-selector" class="difficulty-selector" style="display: none;">
+            <div id="difficulty-selector" class="difficulty-selector">
                 <span class="difficulty-label">난이도:</span>
                 <button id="easy-difficulty" class="difficulty-btn active">하</button>
                 <button id="medium-difficulty" class="difficulty-btn">중</button>
@@ -42,12 +51,16 @@
         </header>
 
         <div class="game-board">
-            <div id="board" class="board"></div>
+            <div class="board-container">
+                <div id="board" class="board"></div>
+                <button id="fullscreen-btn" class="fullscreen-btn" title="전체 화면 모드">
+                    <span class="fullscreen-icon">⛶</span>
+                </button>
+            </div>
         </div>
 
         <div class="controls">
             <button id="new-game" class="btn">새 게임</button>
-            <button id="hint" class="btn">힌트</button>
             <button id="undo" class="btn">되돌리기</button>
             <button id="stats" class="btn">전적 보기</button>
         </div>
@@ -111,17 +124,6 @@
                 <button id="play-again" class="btn">다시 하기</button>
             </div>
         </div>
-
-        <!-- 효과음 -->
-        <audio id="stone-sound" preload="auto">
-            <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT" type="audio/wav">
-        </audio>
-        <audio id="flip-sound" preload="auto">
-            <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT" type="audio/wav">
-        </audio>
-        <audio id="win-sound" preload="auto">
-            <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT" type="audio/wav">
-        </audio>
     </div>
 
     <script src="script.js"></script>

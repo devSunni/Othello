@@ -1,49 +1,38 @@
 class OthelloGame {
     constructor() {
-        this.board = [];
-        this.currentPlayer = 'black';
-        this.gameHistory = [];
-        this.validMoves = [];
-        this.boardSize = 8;
-        this.directions = [
-            [-1, -1], [-1, 0], [-1, 1],
-            [0, -1],           [0, 1],
-            [1, -1],  [1, 0],  [1, 1]
-        ];
+        this.currentPlayer = 1; // 1: 흑, 2: 백
+        this.gameMode = 'ai'; // 기본값을 'ai'로 변경
+        this.difficulty = 'medium'; // 'easy', 'medium', 'hard'
+        this.moveHistory = [];
+        this.audioContext = null;
+        this.audioInitialized = false; // 오디오 초기화 플래그
+        this.isFullscreen = false; // 전체 화면 모드 상태
         
-        // 사용자 관리
-        this.currentUser = localStorage.getItem('othello_current_user') || null;
-        this.users = JSON.parse(localStorage.getItem('othello_users')) || {};
-        this.gameStats = JSON.parse(localStorage.getItem('othello_stats')) || {};
-        
-        // AI 게임 모드
-        this.gameMode = 'pvp'; // 'pvp' or 'ai'
-        this.aiPlayer = 'white'; // AI는 백돌을 사용
-        this.aiThinking = false;
-        this.aiDifficulty = 'medium'; // 'easy', 'medium', 'hard'
-        
-        this.initializeBoard();
+        this.initializeGame();
         this.setupEventListeners();
-        this.updateValidMoves();
         this.updateDisplay();
-        this.updateUserDisplay();
-        this.addStatusMessage('system', '준우와 함께하는 오셀로 게임을 시작합니다! 흑돌부터 시작합니다.');
     }
 
     initializeBoard() {
-        this.board = Array(this.boardSize).fill().map(() => Array(this.boardSize).fill(null));
+        this.board = [];
+        for (let i = 0; i < this.boardSize; i++) {
+            this.board[i] = [];
+            for (let j = 0; j < this.boardSize; j++) {
+                this.board[i][j] = 0;
+            }
+        }
         
-        // 초기 배치
+        // 초기 돌 배치
         const center = this.boardSize / 2;
-        this.board[center - 1][center - 1] = 'white';
-        this.board[center - 1][center] = 'black';
-        this.board[center][center - 1] = 'black';
-        this.board[center][center] = 'white';
+        this.board[center - 1][center - 1] = 2; // 백
+        this.board[center - 1][center] = 1;     // 흑
+        this.board[center][center - 1] = 1;     // 흑
+        this.board[center][center] = 2;         // 백
     }
 
     setupEventListeners() {
-        const boardElement = document.getElementById('board');
-        boardElement.addEventListener('click', (e) => {
+        // 보드 클릭 이벤트
+        document.getElementById('board').addEventListener('click', (e) => {
             if (e.target.classList.contains('cell')) {
                 const row = parseInt(e.target.dataset.row);
                 const col = parseInt(e.target.dataset.col);
@@ -51,28 +40,7 @@ class OthelloGame {
             }
         });
 
-        document.getElementById('new-game').addEventListener('click', () => {
-            this.newGame();
-        });
-
-        document.getElementById('hint').addEventListener('click', () => {
-            this.showHint();
-        });
-
-        document.getElementById('undo').addEventListener('click', () => {
-            this.undoMove();
-        });
-
-        document.getElementById('stats').addEventListener('click', () => {
-            this.showStats();
-        });
-
-        document.getElementById('play-again').addEventListener('click', () => {
-            this.newGame();
-            this.hideGameOverModal();
-        });
-
-        // 게임 모드 선택 이벤트
+        // 게임 모드 선택
         document.getElementById('pvp-mode').addEventListener('click', () => {
             this.setGameMode('pvp');
         });
@@ -81,7 +49,7 @@ class OthelloGame {
             this.setGameMode('ai');
         });
 
-        // 난이도 선택 이벤트
+        // 난이도 선택
         document.getElementById('easy-difficulty').addEventListener('click', () => {
             this.setDifficulty('easy');
         });
@@ -94,7 +62,16 @@ class OthelloGame {
             this.setDifficulty('hard');
         });
 
-        // 사용자 관리 이벤트
+        // 게임 컨트롤
+        document.getElementById('new-game').addEventListener('click', () => {
+            this.newGame();
+        });
+
+        document.getElementById('undo').addEventListener('click', () => {
+            this.undoMove();
+        });
+
+        // 사용자 관리
         document.getElementById('login-btn').addEventListener('click', () => {
             this.showLoginModal();
         });
@@ -103,14 +80,7 @@ class OthelloGame {
             this.logout();
         });
 
-        document.getElementById('register-btn').addEventListener('click', () => {
-            this.register();
-        });
-
-        document.getElementById('login-submit-btn').addEventListener('click', () => {
-            this.login();
-        });
-
+        // 모달 닫기
         document.getElementById('close-login').addEventListener('click', () => {
             this.hideLoginModal();
         });
@@ -119,12 +89,68 @@ class OthelloGame {
             this.hideStatsModal();
         });
 
-        // 모달 외부 클릭 시 닫기
-        window.addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal')) {
-                e.target.style.display = 'none';
+        // 로그인/회원가입
+        document.getElementById('register-btn').addEventListener('click', () => {
+            this.register();
+        });
+
+        document.getElementById('login-submit-btn').addEventListener('click', () => {
+            this.login();
+        });
+
+        // 전적 보기
+        document.getElementById('stats').addEventListener('click', () => {
+            this.showStats();
+        });
+
+        document.getElementById('play-again').addEventListener('click', () => {
+            this.newGame();
+            this.hideGameOverModal();
+        });
+
+        // 전체 화면 모드 토글
+        document.getElementById('fullscreen-btn').addEventListener('click', () => {
+            this.toggleFullscreen();
+        });
+
+        // 전체 화면 모드에서 ESC 키로 나가기
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.isFullscreen) {
+                this.exitFullscreenMode();
             }
         });
+
+        // 오디오 초기화를 위한 첫 번째 상호작용 감지
+        this.setupAudioInitialization();
+    }
+
+    // 오디오 초기화 설정
+    setupAudioInitialization() {
+        const initAudio = () => {
+            if (!this.audioInitialized) {
+                this.audioInitialized = true;
+                this.initAudio();
+                console.log('오디오 초기화됨 (첫 번째 상호작용)');
+                
+                // 초기화 후 테스트 사운드 재생
+                setTimeout(() => {
+                    this.playSound('place');
+                }, 100);
+            }
+        };
+
+        // 다양한 상호작용 이벤트에서 오디오 초기화
+        const events = ['click', 'touchstart', 'keydown', 'mousedown'];
+        events.forEach(event => {
+            document.addEventListener(event, initAudio, { once: true });
+        });
+        
+        // 모바일에서 더 확실하게 작동하도록 추가 이벤트
+        if ('ontouchstart' in window) {
+            // 터치 디바이스인 경우
+            document.addEventListener('touchstart', initAudio, { once: true });
+            document.addEventListener('touchend', initAudio, { once: true });
+        }
     }
 
     // 게임 모드 설정
@@ -132,26 +158,27 @@ class OthelloGame {
         this.gameMode = mode;
         
         // 버튼 상태 업데이트
-        document.getElementById('pvp-mode').classList.toggle('active', mode === 'pvp');
-        document.getElementById('ai-mode').classList.toggle('active', mode === 'ai');
+        document.getElementById('pvp-mode').classList.remove('active');
+        document.getElementById('ai-mode').classList.remove('active');
+        document.getElementById(mode + '-mode').classList.add('active');
         
         // 난이도 선택기 표시/숨김
         const difficultySelector = document.getElementById('difficulty-selector');
-        difficultySelector.style.display = mode === 'ai' ? 'flex' : 'none';
+        if (mode === 'ai') {
+            difficultySelector.style.display = 'block';
+        } else {
+            difficultySelector.style.display = 'none';
+        }
+        
+        this.addStatusMessage('system', `게임 모드가 ${mode === 'pvp' ? '2인 플레이' : 'AI 대전'}로 변경되었습니다.`);
         
         // 새 게임 시작
         this.newGame();
-        
-        if (mode === 'ai') {
-            this.addStatusMessage('system', `AI 대전 모드로 시작합니다! 난이도: ${this.getDifficultyText()}`);
-        } else {
-            this.addStatusMessage('system', '2인 플레이 모드로 시작합니다!');
-        }
     }
 
     // 난이도 설정
     setDifficulty(difficulty) {
-        this.aiDifficulty = difficulty;
+        this.difficulty = difficulty;
         
         // 버튼 상태 업데이트
         document.getElementById('easy-difficulty').classList.toggle('active', difficulty === 'easy');
@@ -165,7 +192,7 @@ class OthelloGame {
 
     // 난이도 텍스트 반환
     getDifficultyText() {
-        switch(this.aiDifficulty) {
+        switch(this.difficulty) {
             case 'easy': return '하';
             case 'medium': return '중';
             case 'hard': return '상';
@@ -181,8 +208,13 @@ class OthelloGame {
             return false;
         }
 
+        // 첫 번째 수에서 오디오 초기화
+        if (this.moveHistory.length === 0) {
+            this.initAudio();
+        }
+
         // 게임 히스토리 저장
-        this.gameHistory.push({
+        this.moveHistory.push({
             board: JSON.parse(JSON.stringify(this.board)),
             currentPlayer: this.currentPlayer
         });
@@ -206,24 +238,23 @@ class OthelloGame {
         }
 
         // 플레이어 변경
-        this.currentPlayer = this.currentPlayer === 'black' ? 'white' : 'black';
+        this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
 
         // 유효한 수가 없으면 패스
         if (!this.hasValidMoves()) {
-            this.currentPlayer = this.currentPlayer === 'black' ? 'white' : 'black';
+            this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
             if (!this.hasValidMoves()) {
                 this.endGame();
                 return true;
             }
-            this.addStatusMessage('system', `${this.currentPlayer === 'black' ? '흑' : '백'}이 패스합니다.`);
+            this.addStatusMessage('system', `${this.currentPlayer === 1 ? '흑' : '백'}이 패스합니다.`);
         }
 
-        this.updateValidMoves();
         this.updateDisplay();
-        this.addStatusMessage('system', `${this.currentPlayer === 'black' ? '흑' : '백'}의 차례입니다.`);
+        this.addStatusMessage('system', `${this.currentPlayer === 1 ? '흑' : '백'}의 차례입니다.`);
 
         // AI 모드에서 AI 차례인 경우
-        if (this.gameMode === 'ai' && this.currentPlayer === this.aiPlayer && !this.aiThinking) {
+        if (this.gameMode === 'ai' && this.currentPlayer === 2 && !this.aiThinking) {
             await this.makeAIMove();
         }
 
@@ -266,7 +297,7 @@ class OthelloGame {
 
     executeAIMove(row, col) {
         // 게임 히스토리 저장
-        this.gameHistory.push({
+        this.moveHistory.push({
             board: JSON.parse(JSON.stringify(this.board)),
             currentPlayer: this.currentPlayer
         });
@@ -290,23 +321,22 @@ class OthelloGame {
         }
 
         // 플레이어 변경
-        this.currentPlayer = this.currentPlayer === 'black' ? 'white' : 'black';
+        this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
 
         // 유효한 수가 없으면 패스
         if (!this.hasValidMoves()) {
-            this.currentPlayer = this.currentPlayer === 'black' ? 'white' : 'black';
+            this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
             if (!this.hasValidMoves()) {
                 this.endGame();
                 this.aiThinking = false;
                 this.hideAIThinking();
                 return;
             }
-            this.addStatusMessage('system', `${this.currentPlayer === 'black' ? '흑' : '백'}이 패스합니다.`);
+            this.addStatusMessage('system', `${this.currentPlayer === 1 ? '흑' : '백'}이 패스합니다.`);
         }
 
-        this.updateValidMoves();
         this.updateDisplay();
-        this.addStatusMessage('system', `${this.currentPlayer === 'black' ? '흑' : '백'}의 차례입니다.`);
+        this.addStatusMessage('system', `${this.currentPlayer === 1 ? '흑' : '백'}의 차례입니다.`);
 
         this.aiThinking = false;
         this.hideAIThinking();
@@ -319,7 +349,7 @@ class OthelloGame {
         const validMoves = [];
         for (let row = 0; row < this.boardSize; row++) {
             for (let col = 0; col < this.boardSize; col++) {
-                if (this.isValidMove(row, col, this.aiPlayer)) {
+                if (this.isValidMove(row, col, 2)) {
                     validMoves.push([row, col]);
                 }
             }
@@ -328,7 +358,7 @@ class OthelloGame {
         if (validMoves.length === 0) return null;
         
         // 난이도별 AI 전략
-        switch(this.aiDifficulty) {
+        switch(this.difficulty) {
             case 'easy':
                 return this.calculateEasyMove(validMoves);
             case 'medium':
@@ -384,7 +414,7 @@ class OthelloGame {
         let maxFlips = 0;
         
         for (const move of validMoves) {
-            const flips = this.countFlips(move[0], move[1], this.aiPlayer);
+            const flips = this.countFlips(move[0], move[1], 2);
             if (flips > maxFlips) {
                 maxFlips = flips;
                 bestMove = move;
@@ -406,20 +436,20 @@ class OthelloGame {
             const [row, col] = move;
             
             // 돌 배치
-            tempBoard[row][col] = this.aiPlayer;
+            tempBoard[row][col] = 2;
             
             // 돌 뒤집기
             let flippedCount = 0;
             for (const [dr, dc] of this.directions) {
-                const flips = this.wouldFlip(row, col, dr, dc, this.aiPlayer);
+                const flips = this.wouldFlip(row, col, dr, dc, 2);
                 for (const [fr, fc] of flips) {
-                    tempBoard[fr][fc] = this.aiPlayer;
+                    tempBoard[fr][fc] = 2;
                     flippedCount++;
                 }
             }
             
             // 보드 평가
-            const score = this.evaluateBoard(tempBoard, this.aiPlayer);
+            const score = this.evaluateBoard(tempBoard, 2);
             
             if (score > bestScore) {
                 bestScore = score;
@@ -433,7 +463,7 @@ class OthelloGame {
     // 보드 평가 함수 (고급 난이도용)
     evaluateBoard(board, player) {
         let score = 0;
-        const opponent = player === 'black' ? 'white' : 'black';
+        const opponent = player === 1 ? 2 : 1;
         
         // 모서리 가중치 (가장 중요)
         const corners = [[0, 0], [0, 7], [7, 0], [7, 7]];
@@ -494,19 +524,42 @@ class OthelloGame {
     }
 
     showAIThinking() {
+        this.aiThinking = true;
+        
+        // 기존 상태 메시지에 AI 생각 중 표시
+        this.addStatusMessage('ai', 'AI가 생각 중입니다...');
+        
+        // 보드에 AI 생각 중 애니메이션 추가
         const cells = document.querySelectorAll('.cell');
         cells.forEach(cell => {
-            if (cell.textContent === '') {
-                cell.classList.add('ai-thinking');
-            }
+            cell.classList.add('ai-thinking');
         });
+        
+        // 전체 화면 모드에서 AI 생각 중 오버레이 표시
+        if (this.isFullscreen) {
+            const aiThinkingOverlay = document.getElementById('fullscreen-ai-thinking');
+            if (aiThinkingOverlay) {
+                aiThinkingOverlay.style.display = 'block';
+            }
+        }
     }
 
     hideAIThinking() {
+        this.aiThinking = false;
+        
+        // AI 생각 중 애니메이션 제거
         const cells = document.querySelectorAll('.cell');
         cells.forEach(cell => {
             cell.classList.remove('ai-thinking');
         });
+        
+        // 전체 화면 모드에서 AI 생각 중 오버레이 숨김
+        if (this.isFullscreen) {
+            const aiThinkingOverlay = document.getElementById('fullscreen-ai-thinking');
+            if (aiThinkingOverlay) {
+                aiThinkingOverlay.style.display = 'none';
+            }
+        }
     }
 
     // 사용자 관리 함수들
@@ -722,7 +775,7 @@ class OthelloGame {
         const flips = [];
         let r = row + dr;
         let c = col + dc;
-        const opponent = player === 'black' ? 'white' : 'black';
+        const opponent = player === 1 ? 2 : 1;
 
         while (r >= 0 && r < this.boardSize && c >= 0 && c < this.boardSize) {
             if (this.board[r][c] === opponent) {
@@ -739,9 +792,9 @@ class OthelloGame {
     }
 
     hasValidMoves() {
-        for (let row = 0; row < this.boardSize; row++) {
-            for (let col = 0; col < this.boardSize; col++) {
-                if (this.isValidMove(row, col, this.currentPlayer)) {
+        for (let i = 0; i < this.boardSize; i++) {
+            for (let j = 0; j < this.boardSize; j++) {
+                if (this.isValidMove(i, j, this.currentPlayer)) {
                     return true;
                 }
             }
@@ -749,110 +802,74 @@ class OthelloGame {
         return false;
     }
 
-    updateValidMoves() {
-        this.validMoves = [];
-        for (let row = 0; row < this.boardSize; row++) {
-            for (let col = 0; col < this.boardSize; col++) {
-                if (this.isValidMove(row, col, this.currentPlayer)) {
-                    this.validMoves.push([row, col]);
-                }
-            }
-        }
-    }
-
     updateDisplay() {
-        const boardElement = document.getElementById('board');
-        boardElement.innerHTML = '';
-
-        for (let row = 0; row < this.boardSize; row++) {
-            for (let col = 0; col < this.boardSize; col++) {
+        const board = document.getElementById('board');
+        board.innerHTML = '';
+        
+        for (let i = 0; i < this.boardSize; i++) {
+            for (let j = 0; j < this.boardSize; j++) {
                 const cell = document.createElement('div');
                 cell.className = 'cell';
-                cell.dataset.row = row;
-                cell.dataset.col = col;
-
-                if (this.board[row][col] === 'black') {
+                cell.dataset.row = i;
+                cell.dataset.col = j;
+                
+                if (this.board[i][j] === 1) {
                     cell.classList.add('black');
-                    cell.textContent = '⚫';
-                } else if (this.board[row][col] === 'white') {
+                } else if (this.board[i][j] === 2) {
                     cell.classList.add('white');
-                    cell.textContent = '⚪';
                 }
-
-                // 유효한 수 표시 (AI 모드에서는 AI 차례가 아닐 때만)
-                if (this.gameMode === 'ai' && this.currentPlayer === this.aiPlayer) {
-                    // AI 차례일 때는 유효한 수를 표시하지 않음
-                } else if (this.isValidMove(row, col, this.currentPlayer)) {
-                    cell.classList.add('valid-move');
-                }
-
-                boardElement.appendChild(cell);
+                
+                board.appendChild(cell);
             }
         }
-
-        // 점수 업데이트
+        
         this.updateScore();
         
-        // 현재 플레이어 표시
-        const currentPlayerText = this.currentPlayer === 'black' ? '흑' : '백';
-        const modeText = this.gameMode === 'ai' && this.currentPlayer === this.aiPlayer ? ' (AI)' : '';
-        document.getElementById('current-player').textContent = currentPlayerText + modeText;
+        // 전체 화면 모드에서도 점수 업데이트
+        if (this.isFullscreen) {
+            const blackScoreElement = document.getElementById('fullscreen-black-score');
+            const whiteScoreElement = document.getElementById('fullscreen-white-score');
+            const currentPlayerElement = document.getElementById('fullscreen-current-player');
+            
+            if (blackScoreElement) blackScoreElement.textContent = this.getScore(1);
+            if (whiteScoreElement) whiteScoreElement.textContent = this.getScore(2);
+            if (currentPlayerElement) currentPlayerElement.textContent = this.currentPlayer === 1 ? '흑' : '백';
+        }
     }
 
     updateScore() {
         let blackCount = 0;
         let whiteCount = 0;
-
-        for (let row = 0; row < this.boardSize; row++) {
-            for (let col = 0; col < this.boardSize; col++) {
-                if (this.board[row][col] === 'black') blackCount++;
-                else if (this.board[row][col] === 'white') whiteCount++;
+        
+        for (let i = 0; i < this.boardSize; i++) {
+            for (let j = 0; j < this.boardSize; j++) {
+                if (this.board[i][j] === 1) {
+                    blackCount++;
+                } else if (this.board[i][j] === 2) {
+                    whiteCount++;
+                }
             }
         }
-
+        
         document.getElementById('black-score').textContent = blackCount;
         document.getElementById('white-score').textContent = whiteCount;
-    }
-
-    showHint() {
-        if (this.validMoves.length === 0) {
-            this.addStatusMessage('system', '놓을 수 있는 수가 없습니다.');
-            return;
-        }
-
-        const hint = this.validMoves[Math.floor(Math.random() * this.validMoves.length)];
-        const row = hint[0] + 1;
-        const col = String.fromCharCode(65 + hint[1]); // A, B, C, ...
         
-        this.addStatusMessage('ai', `힌트: ${col}${row} 위치에 놓아보세요!`);
-        
-        // 힌트 위치 하이라이트
-        const cells = document.querySelectorAll('.cell');
-        cells.forEach(cell => cell.classList.remove('hint'));
-        
-        const hintCell = document.querySelector(`[data-row="${hint[0]}"][data-col="${hint[1]}"]`);
-        if (hintCell) {
-            hintCell.style.background = '#e74c3c';
-            hintCell.style.animation = 'pulse 1s infinite';
-            
-            setTimeout(() => {
-                hintCell.style.background = '';
-                hintCell.style.animation = '';
-            }, 3000);
-        }
+        // 현재 플레이어 표시
+        const currentPlayerText = this.currentPlayer === 1 ? '흑' : '백';
+        const modeText = this.gameMode === 'ai' && this.currentPlayer === 2 ? ' (AI)' : '';
+        document.getElementById('current-player').textContent = currentPlayerText + modeText;
     }
 
     undoMove() {
-        if (this.gameHistory.length === 0) {
+        if (this.moveHistory.length === 0) {
             this.addStatusMessage('system', '되돌릴 수 있는 수가 없습니다.');
             return;
         }
 
-        const lastState = this.gameHistory.pop();
+        const lastState = this.moveHistory.pop();
         this.board = lastState.board;
         this.currentPlayer = lastState.currentPlayer;
         
-        this.updateValidMoves();
         this.updateDisplay();
         this.addStatusMessage('system', '한 수 되돌렸습니다.');
     }
@@ -891,13 +908,10 @@ class OthelloGame {
 
     newGame() {
         this.board = [];
-        this.currentPlayer = 'black';
-        this.gameHistory = [];
-        this.validMoves = [];
-        this.aiThinking = false;
+        this.currentPlayer = 1;
+        this.moveHistory = [];
         
         this.initializeBoard();
-        this.updateValidMoves();
         this.updateDisplay();
         
         // 채팅 메시지 초기화
@@ -911,27 +925,393 @@ class OthelloGame {
     }
 
     addStatusMessage(type, message) {
-        const statusMessages = document.getElementById('status-messages');
-        const messageElement = document.createElement('div');
-        messageElement.className = `status-message ${type}`;
-        messageElement.textContent = message;
+        const statusContainer = document.getElementById('status-messages');
+        const statusMessage = document.createElement('div');
+        statusMessage.className = `status-message ${type}`;
+        statusMessage.textContent = message;
         
-        statusMessages.appendChild(messageElement);
-        statusMessages.scrollTop = statusMessages.scrollHeight;
+        statusContainer.appendChild(statusMessage);
+        statusContainer.scrollTop = statusContainer.scrollHeight;
+        
+        // 전체 화면 모드에서도 상태 메시지 표시
+        if (this.isFullscreen) {
+            const fullscreenStatus = document.getElementById('fullscreen-status');
+            if (fullscreenStatus) {
+                const fullscreenMessage = document.createElement('div');
+                fullscreenMessage.className = `status-message ${type}`;
+                fullscreenMessage.textContent = message;
+                fullscreenStatus.appendChild(fullscreenMessage);
+                
+                // 3초 후 자동으로 사라지게 하기
+                setTimeout(() => {
+                    if (fullscreenMessage.parentNode) {
+                        fullscreenMessage.remove();
+                    }
+                }, 3000);
+            }
+        }
+        
+        // 5초 후 자동으로 사라지게 하기
+        setTimeout(() => {
+            if (statusMessage.parentNode) {
+                statusMessage.remove();
+            }
+        }, 5000);
     }
 
     // 효과음 재생 함수
     playSound(soundType) {
         try {
-            const audio = document.getElementById(`${soundType}-sound`);
-            if (audio) {
-                audio.currentTime = 0;
-                audio.volume = 0.3; // 볼륨을 30%로 설정
-                audio.play().catch(e => console.log('효과음 재생 실패:', e));
+            // 모바일에서 더 간단하고 확실한 방법
+            if (!this.audioInitialized) {
+                console.log('오디오가 아직 초기화되지 않음');
+                return;
             }
+            
+            // 가장 간단하고 안정적인 방법: Web Audio API 직접 사용
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // 오디오 컨텍스트가 일시정지 상태라면 재개
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // 효과음 타입별 설정
+            let frequency = 400;
+            let duration = 0.1;
+            
+            switch(soundType) {
+                case 'place':
+                    frequency = 500;
+                    duration = 0.08;
+                    break;
+                case 'flip':
+                    frequency = 300;
+                    duration = 0.12;
+                    break;
+                case 'win':
+                    frequency = 800;
+                    duration = 0.3;
+                    break;
+                case 'ai':
+                    frequency = 200;
+                    duration = 0.15;
+                    break;
+            }
+            
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+            
         } catch (e) {
             console.log('효과음 재생 오류:', e);
+            // 대체 방법: 더 간단한 비프음
+            this.playSimpleBeep();
         }
+    }
+    
+    // 대체 효과음 (매우 간단한 비프음)
+    playSimpleBeep() {
+        try {
+            // 가장 간단한 방법: 빈 오디오 컨텍스트로 비프음 생성
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 400;
+            gainNode.gain.value = 0.1;
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.1);
+            
+        } catch (e) {
+            console.log('대체 효과음도 실패:', e);
+        }
+    }
+
+    // 오디오 초기화
+    initAudio() {
+        try {
+            // 이미 초기화되어 있으면 리턴
+            if (this.audioContext) {
+                return;
+            }
+            
+            // 모바일에서 더 안정적인 방법으로 오디오 컨텍스트 생성
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            this.audioContext = new AudioContext();
+            
+            // 오디오 컨텍스트가 일시정지 상태라면 재개
+            if (this.audioContext.state === 'suspended') {
+                this.audioContext.resume();
+            }
+            
+            console.log('오디오 컨텍스트 초기화됨');
+            
+            // 테스트 사운드 재생 (매우 짧고 조용하게)
+            this.playTestSound();
+            
+        } catch (e) {
+            console.log('오디오 초기화 실패:', e);
+            this.audioContext = null;
+        }
+    }
+    
+    // 테스트 사운드 (매우 짧고 조용하게)
+    playTestSound() {
+        try {
+            if (!this.audioContext) return;
+            
+            const oscillator = this.audioContext.createOscillator();
+            const gainNode = this.audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(200, this.audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.01, this.audioContext.currentTime); // 매우 조용하게
+            gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.05);
+            
+            oscillator.start(this.audioContext.currentTime);
+            oscillator.stop(this.audioContext.currentTime + 0.05);
+            
+        } catch (e) {
+            console.log('테스트 사운드 실패:', e);
+        }
+    }
+
+    // 화면 방향 변화 감지 설정
+    setupOrientationListener() {
+        // 화면 방향 변화 이벤트
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                this.handleOrientationChange();
+            }, 100);
+        });
+        
+        // 화면 크기 변화 이벤트
+        window.addEventListener('resize', () => {
+            this.handleOrientationChange();
+        });
+        
+        // 초기 방향 설정
+        this.handleOrientationChange();
+    }
+    
+    // 화면 방향 변화 처리
+    handleOrientationChange() {
+        const isLandscape = window.innerWidth > window.innerHeight;
+        const container = document.querySelector('.container');
+        
+        if (isLandscape) {
+            container.classList.add('landscape-mode');
+            console.log('가로 모드로 변경됨');
+        } else {
+            container.classList.remove('landscape-mode');
+            console.log('세로 모드로 변경됨');
+        }
+    }
+
+    // 게임 초기화
+    initializeGame() {
+        // 사용자 관리
+        this.currentUser = localStorage.getItem('othello_current_user') || null;
+        this.users = JSON.parse(localStorage.getItem('othello_users')) || {};
+        this.gameStats = JSON.parse(localStorage.getItem('othello_stats')) || {};
+        
+        // AI 관련 변수
+        this.aiThinking = false;
+        
+        // 보드 초기화
+        this.boardSize = 8;
+        this.directions = [
+            [-1, -1], [-1, 0], [-1, 1],
+            [0, -1],           [0, 1],
+            [1, -1],  [1, 0],  [1, 1]
+        ];
+        
+        this.initializeBoard();
+        this.updateUserDisplay();
+        
+        // AI 모드가 기본이므로 난이도 선택기 표시
+        const difficultySelector = document.getElementById('difficulty-selector');
+        difficultySelector.style.display = 'block';
+        
+        this.addStatusMessage('system', '준우와 함께하는 오셀로 게임을 시작합니다! AI 대전 모드로 시작합니다.');
+        
+        // 화면 방향 변화 감지
+        this.setupOrientationListener();
+    }
+
+    // 전체 화면 모드 토글
+    toggleFullscreen() {
+        if (this.isFullscreen) {
+            this.exitFullscreen();
+        } else {
+            this.enterFullscreen();
+        }
+    }
+
+    // 전체 화면 모드 진입
+    enterFullscreen() {
+        if (this.isFullscreen) return;
+        
+        this.isFullscreen = true;
+        document.body.classList.add('fullscreen-mode');
+        
+        // 전체 화면 모드 UI 생성
+        this.createFullscreenUI();
+        
+        // 전체 화면 아이콘 변경
+        const fullscreenIcon = document.querySelector('.fullscreen-icon');
+        if (fullscreenIcon) {
+            fullscreenIcon.textContent = '⛶';
+        }
+        
+        this.addStatusMessage('system', '전체 화면 모드로 전환되었습니다. ESC 키로 나갈 수 있습니다.');
+        
+        // 화면 방향 고정 (모바일에서)
+        if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(() => {
+                // 방향 고정이 실패해도 계속 진행
+            });
+        }
+    }
+
+    // 전체 화면 모드에서 ESC 키로 나가기
+    exitFullscreen() {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+        this.exitFullscreenMode();
+    }
+
+    // 전체 화면 모드 종료 (내부 메서드)
+    exitFullscreenMode() {
+        if (!this.isFullscreen) return;
+        
+        this.isFullscreen = false;
+        document.body.classList.remove('fullscreen-mode');
+        
+        // 전체 화면 모드 UI 제거
+        this.removeFullscreenUI();
+        
+        // 전체 화면 아이콘 변경
+        const fullscreenIcon = document.querySelector('.fullscreen-icon');
+        if (fullscreenIcon) {
+            fullscreenIcon.textContent = '⛶';
+        }
+        
+        this.addStatusMessage('system', '전체 화면 모드가 종료되었습니다.');
+        
+        // 화면 방향 고정 해제
+        if (screen.orientation && screen.orientation.unlock) {
+            screen.orientation.unlock();
+        }
+    }
+
+    // 전체 화면 모드 UI 생성
+    createFullscreenUI() {
+        // 게임 정보 오버레이
+        const gameInfoOverlay = document.createElement('div');
+        gameInfoOverlay.className = 'game-info-overlay';
+        gameInfoOverlay.innerHTML = `
+            <div class="score">
+                <span class="player">흑: <span id="fullscreen-black-score">${this.getScore(1)}</span></span>
+                <span class="player">백: <span id="fullscreen-white-score">${this.getScore(2)}</span></span>
+            </div>
+            <div class="current-player">
+                현재 차례: <span id="fullscreen-current-player">${this.currentPlayer === 1 ? '흑' : '백'}</span>
+            </div>
+        `;
+        document.body.appendChild(gameInfoOverlay);
+        
+        // 컨트롤 버튼들
+        const fullscreenControls = document.createElement('div');
+        fullscreenControls.className = 'fullscreen-controls';
+        fullscreenControls.innerHTML = `
+            <button id="fullscreen-new-game" class="btn">새 게임</button>
+            <button id="fullscreen-undo" class="btn">되돌리기</button>
+        `;
+        document.body.appendChild(fullscreenControls);
+        
+        // 상태 메시지 영역
+        const fullscreenStatus = document.createElement('div');
+        fullscreenStatus.className = 'fullscreen-status';
+        fullscreenStatus.id = 'fullscreen-status';
+        document.body.appendChild(fullscreenStatus);
+        
+        // AI 생각 중 오버레이
+        const aiThinkingOverlay = document.createElement('div');
+        aiThinkingOverlay.className = 'ai-thinking-overlay';
+        aiThinkingOverlay.id = 'fullscreen-ai-thinking';
+        aiThinkingOverlay.style.display = 'none';
+        aiThinkingOverlay.textContent = 'AI가 생각 중입니다...';
+        document.body.appendChild(aiThinkingOverlay);
+        
+        // 전체 화면 모드 이벤트 리스너 설정
+        this.setupFullscreenEventListeners();
+    }
+
+    // 전체 화면 모드 UI 제거
+    removeFullscreenUI() {
+        const elementsToRemove = [
+            '.game-info-overlay',
+            '.fullscreen-controls',
+            '.fullscreen-status',
+            '.ai-thinking-overlay'
+        ];
+        
+        elementsToRemove.forEach(selector => {
+            const element = document.querySelector(selector);
+            if (element) {
+                element.remove();
+            }
+        });
+    }
+
+    // 전체 화면 모드 이벤트 리스너 설정
+    setupFullscreenEventListeners() {
+        // 새 게임 버튼
+        const newGameBtn = document.getElementById('fullscreen-new-game');
+        if (newGameBtn) {
+            newGameBtn.addEventListener('click', () => {
+                this.newGame();
+            });
+        }
+        
+        // 되돌리기 버튼
+        const undoBtn = document.getElementById('fullscreen-undo');
+        if (undoBtn) {
+            undoBtn.addEventListener('click', () => {
+                this.undoMove();
+            });
+        }
+    }
+
+    // 점수 가져오기
+    getScore(player) {
+        let count = 0;
+        for (let i = 0; i < this.boardSize; i++) {
+            for (let j = 0; j < this.boardSize; j++) {
+                if (this.board[i][j] === player) {
+                    count++;
+                }
+            }
+        }
+        return count;
     }
 }
 

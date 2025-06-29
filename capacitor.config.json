@@ -1,0 +1,14 @@
+{
+  "appId": "com.junwoo.othello",
+  "appName": "준우와 함께하는 오셀로 게임",
+  "webDir": ".",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "buildOptions": {
+      "keystorePath": null,
+      "keystoreAlias": null
+    }
+  }
+} 
